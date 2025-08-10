@@ -10,29 +10,31 @@
       </select>
     </div>
 
-    <table class="report-table">
-      <thead>
-        <tr>
-          <th>Sales</th>
-          <th>Bulan BP</th>
-          <th>Nama Customer</th>
-          <th>Foto DEC</th>
-          <th>Link</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="row in filteredData" :key="row.id">
-          <td>{{ row.sales || "-" }}</td>
-          <td>{{ row.bulan_bp || "-" }}</td>
-          <td>{{ row.nama_customer || "-" }}</td>
-          <td>{{ row.foto_dec_url ? "✅ Sudah" : "❌ Belum" }}</td>
-          <td>
-            <a v-if="row.foto_dec_url" :href="row.foto_dec_url" target="_blank">📥 Unduh</a>
-            <span v-else>-</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-container">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Sales</th>
+            <th>Bulan BP</th>
+            <th>Nama Customer</th>
+            <th>Foto DEC</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in filteredData" :key="row.id">
+            <td>{{ row.sales || "-" }}</td>
+            <td>{{ row.bulan_bp || "-" }}</td>
+            <td>{{ row.nama_customer || "-" }}</td>
+            <td>{{ row.foto_dec_url ? "✅ Sudah" : "❌ Belum" }}</td>
+            <td>
+              <a v-if="row.foto_dec_url" :href="row.foto_dec_url" target="_blank">📥 Unduh</a>
+              <span v-else>-</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -75,3 +77,56 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.report-container {
+  background: white;
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.filter-container {
+  margin-bottom: 1rem;
+}
+
+.filter-container select {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px; /* biar tetap enak dibaca di scroll */
+}
+
+.report-table th,
+.report-table td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.report-table th {
+  background-color: #c8102e;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .report-table {
+    font-size: 0.85rem;
+    min-width: 500px;
+  }
+  .report-container {
+    padding: 0.5rem;
+  }
+}
+</style>

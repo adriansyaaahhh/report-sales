@@ -34,9 +34,11 @@
       </div>
 
       <div class="mb-3">
-        <label>Penerima Unit *</label><br/>
-        <label><input type="radio" value="Pemilik" v-model="penerima" required /> Pemilik</label>
-        <label><input type="radio" value="Perwakilan" v-model="penerima" required /> Perwakilan</label>
+        <label>Penerima Unit *</label>
+        <div class="radio-group">
+          <label><input type="radio" value="Pemilik" v-model="penerima" required /> Pemilik</label>
+          <label><input type="radio" value="Perwakilan" v-model="penerima" required /> Perwakilan</label>
+        </div>
       </div>
 
       <div class="mb-3">
@@ -69,21 +71,10 @@ export default {
     ]
 
     const salesList = [
-      "ADE YULIA",
-      "ADRIANTO",
-      "AULIA NOPRI",
-      "AZIS",
-      "DENI SAHPUTRA",
-      "FAHRIZAN HUTASUHUT",
-      "JIMMY PRATAMA",
-      "MHD REZKI",
-      "MUHAMMAD FAJAR",
-      "MUHAMMAD NUR",
-      "RANDI SAPUTRA",
-      "RISKI ERISMA IHSAN",
-      "RITA ATRIA",
-      "RONAL EKA PUTRA",
-      "SYAFITRI ALHAPI"
+      "ADE YULIA","ADRIANTO","AULIA NOPRI","AZIS","DENI SAHPUTRA",
+      "FAHRIZAN HUTASUHUT","JIMMY PRATAMA","MHD REZKI","MUHAMMAD FAJAR",
+      "MUHAMMAD NUR","RANDI SAPUTRA","RISKI ERISMA IHSAN","RITA ATRIA",
+      "RONAL EKA PUTRA","SYAFITRI ALHAPI"
     ]
 
     const tanggal = ref('')
@@ -180,13 +171,85 @@ export default {
 </script>
 
 <style scoped>
-.form-card { background: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
-.mb-3 { margin-bottom: 1rem; }
-input[type="text"], input[type="date"], select { width:100%; padding: 0.5rem; border-radius:6px; border:1px solid #ddd; }
-.actions { margin-top: 1rem; text-align: right; }
-.btn-submit {
-  background: #b70000; color: #fff; padding: 0.6rem 1rem; border-radius:8px; border:none; cursor:pointer;
+.form-card {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  max-width: 600px;
+  margin: auto;
 }
-.btn-submit:hover { background: #ff0000; }
-label { font-weight: 600; display:block; margin-bottom: .25rem; color: #333; }
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+input[type="text"], 
+input[type="date"], 
+select, 
+input[type="file"] {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+}
+
+.actions {
+  margin-top: 1rem;
+  text-align: right;
+}
+
+.btn-submit {
+  background: #b70000;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-submit:hover {
+  background: #ff0000;
+}
+
+label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: .25rem;
+  color: #333;
+}
+
+.radio-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.radio-group label {
+  font-weight: normal;
+}
+
+/* Responsif untuk mobile */
+@media (max-width: 600px) {
+  .form-card {
+    padding: 1rem;
+  }
+
+  input[type="text"], 
+  input[type="date"], 
+  select, 
+  input[type="file"] {
+    font-size: 0.9rem;
+  }
+
+  .mb-3 label {
+    font-size: 0.9rem;
+  }
+
+  /* Radio button vertikal di mobile */
+  .radio-group {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+}
 </style>

@@ -10,6 +10,7 @@ body {
   color: white;
   padding: 1rem;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
 }
@@ -22,6 +23,7 @@ body {
 .navbar-menu {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .nav-link {
@@ -33,16 +35,18 @@ body {
 }
 
 .main-container {
-  padding: 2rem;
+  padding: 1rem;
 }
 
-.form-container, .report-container {
+.form-container, 
+.report-container {
   background: white;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 10px;
-  max-width: 600px;
+  max-width: 900px;
   margin: auto;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow-x: auto; /* untuk tabel yang lebar */
 }
 
 .form-group {
@@ -61,7 +65,7 @@ input, textarea, select {
 }
 
 .btn-submit {
-  background-color: #c8102e;
+  background-color: #1019c8;
   color: white;
   padding: 0.7rem 1.5rem;
   border: none;
@@ -72,15 +76,22 @@ input, textarea, select {
   background-color: #a50e24;
 }
 
+/* ===== TABLE ===== */
+.table-container {
+  width: 100%;
+  overflow-x: auto; /* scroll horizontal di mobile */
+}
+
 .report-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+  min-width: 600px; /* agar kolom tidak terlalu sempit */
 }
 .report-table th, .report-table td {
   border: 1px solid #ddd;
   padding: 0.7rem;
   text-align: left;
+  white-space: nowrap; /* cegah teks pecah di tengah kata */
 }
 .report-table th {
   background-color: #c8102e;
@@ -88,4 +99,41 @@ input, textarea, select {
 }
 .report-table tr:hover {
   background-color: #f1f1f1;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .navbar-menu {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .form-container, 
+  .report-container {
+    padding: 1rem;
+  }
+
+  .form-group label {
+    font-size: 0.9rem;
+  }
+  
+  input, textarea, select {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-title {
+    font-size: 1rem;
+  }
+  
+  .report-table th, 
+  .report-table td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
 }
