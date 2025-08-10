@@ -14,21 +14,34 @@
       <table class="report-table">
         <thead>
           <tr>
+            <th>Tanggal Penyerahan</th>
             <th>Sales</th>
             <th>Bulan BP</th>
             <th>Nama Customer</th>
+            <th>Penerima Unit</th>
+            <th>Alasan (Jika Bukan Pemilik)</th>
             <th>Foto DEC</th>
             <th>Link</th>
+            <th>Doc Pendukung</th>
+            <th>Link Doc</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="row in filteredData" :key="row.id">
+            <td>{{ row.tanggal_penyerahan || "-" }}</td>
             <td>{{ row.sales || "-" }}</td>
             <td>{{ row.bulan_bp || "-" }}</td>
             <td>{{ row.nama_customer || "-" }}</td>
+            <td>{{ row.penerima_unit || "-" }}</td>
+            <td>{{ row.alasan_bukan_pemilik || "-" }}</td>
             <td>{{ row.foto_dec_url ? "✅ Sudah" : "❌ Belum" }}</td>
             <td>
-              <a v-if="row.foto_dec_url" :href="row.foto_dec_url" target="_blank">📥 Unduh</a>
+              <a v-if="row.foto_dec_url" :href="row.foto_dec_url" target="_blank" class="download-link">📥 Unduh</a>
+              <span v-else>-</span>
+            </td>
+            <td>{{ row.doc_perwakilan_url ? "✅ Sudah" : "❌ Belum" }}</td>
+            <td>
+              <a v-if="row.doc_perwakilan_url" :href="row.doc_perwakilan_url" target="_blank" class="download-link">📥 Unduh</a>
               <span v-else>-</span>
             </td>
           </tr>
@@ -39,12 +52,7 @@
 </template>
 
 <script>
-import { createClient } from "@supabase/supabase-js";
-
-const client = createClient(
-  "https://nslsiisupracuzuzteut.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zbHNpaXN1cHJhY3V6dXp0ZXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDMxODYsImV4cCI6MjA2OTk3OTE4Nn0.oifO2_BmGmW2sjfyqAFVDeoQ5L-IosIqQSKqBmYORFA"
-);
+import { supabase } from "../supabase";
 
 export default {
   name: "Report",
@@ -57,7 +65,7 @@ export default {
     };
   },
   async mounted() {
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from("penyerahan_unit")
       .select("*")
       .order("tanggal_penyerahan", { ascending: false });
@@ -66,6 +74,8 @@ export default {
       this.allData = data;
       this.filteredData = data;
       this.bulanList = [...new Set(data.map(row => row.bulan_bp))];
+    } else {
+      console.error('❌ Error load data:', error);
     }
   },
   methods: {
@@ -104,7 +114,7 @@ export default {
 .report-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 600px; /* biar tetap enak dibaca di scroll */
+  min-width: 1000px; /* lebih lebar karena ada kolom tambahan */
 }
 
 .report-table th,
@@ -120,10 +130,20 @@ export default {
   color: white;
 }
 
+.download-link {
+  cursor: pointer;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.download-link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 768px) {
   .report-table {
     font-size: 0.85rem;
-    min-width: 500px;
+    min-width: 900px;
   }
   .report-container {
     padding: 0.5rem;
