@@ -34,14 +34,34 @@
             <td>{{ row.nama_customer || "-" }}</td>
             <td>{{ row.penerima_unit || "-" }}</td>
             <td>{{ row.alasan_bukan_pemilik || "-" }}</td>
-            <td>{{ row.foto_dec_url ? "✅ Sudah" : "❌ Belum" }}</td>
+            <td>{{ getFotoStatus(row.foto_dec_url) }}</td>
             <td>
-              <a v-if="row.foto_dec_url" :href="row.foto_dec_url" target="_blank" class="download-link">📥 Unduh</a>
+              <div v-if="parseUrls(row.foto_dec_url).length > 0" class="links-container">
+                <a 
+                  v-for="(url, index) in parseUrls(row.foto_dec_url)" 
+                  :key="'foto-' + index"
+                  :href="url" 
+                  target="_blank" 
+                  class="download-link"
+                >
+                  📥 Foto {{ index + 1 }}
+                </a>
+              </div>
               <span v-else>-</span>
             </td>
-            <td>{{ row.doc_perwakilan_url ? "✅ Sudah" : "❌ Belum" }}</td>
+            <td>{{ getDocStatus(row.doc_perwakilan_url) }}</td>
             <td>
-              <a v-if="row.doc_perwakilan_url" :href="row.doc_perwakilan_url" target="_blank" class="download-link">📥 Unduh</a>
+              <div v-if="parseUrls(row.doc_perwakilan_url).length > 0" class="links-container">
+                <a 
+                  v-for="(url, index) in parseUrls(row.doc_perwakilan_url)" 
+                  :key="'doc-' + index"
+                  :href="url" 
+                  target="_blank" 
+                  class="download-link"
+                >
+                  📄 Doc {{ index + 1 }}
+                </a>
+              </div>
               <span v-else>-</span>
             </td>
           </tr>
@@ -61,7 +81,11 @@ export default {
       allData: [],
       filteredData: [],
       filterBulan: "",
-      bulanList: []
+      // Daftar lengkap semua 12 bulan
+      bulanList: [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+      ]
     };
   },
   async mounted() {
@@ -73,7 +97,7 @@ export default {
     if (!error) {
       this.allData = data;
       this.filteredData = data;
-      this.bulanList = [...new Set(data.map(row => row.bulan_bp))];
+      console.log('✅ Data loaded:', data.length, 'records');
     } else {
       console.error('❌ Error load data:', error);
     }
@@ -83,6 +107,40 @@ export default {
       this.filteredData = this.filterBulan
         ? this.allData.filter(row => row.bulan_bp === this.filterBulan)
         : this.allData;
+      console.log('🔍 Filter applied:', this.filterBulan, '- Results:', this.filteredData.length);
+    },
+
+    // Parse URLs (untuk multiple files yang disimpan sebagai JSON)
+    parseUrls(urlData) {
+      if (!urlData) return [];
+      
+      try {
+        // Jika sudah array JSON string
+        if (urlData.startsWith('[') && urlData.endsWith(']')) {
+          return JSON.parse(urlData);
+        }
+        // Jika single URL string
+        return [urlData];
+      } catch (e) {
+        // Jika parse gagal, anggap single URL
+        return [urlData];
+      }
+    },
+
+    // Get status foto
+    getFotoStatus(fotoUrl) {
+      const urls = this.parseUrls(fotoUrl);
+      if (urls.length === 0) return "❌ Belum";
+      if (urls.length === 1) return "✅ 1 Foto";
+      return `✅ ${urls.length} Foto`;
+    },
+
+    // Get status dokumen
+    getDocStatus(docUrl) {
+      const urls = this.parseUrls(docUrl);
+      if (urls.length === 0) return "❌ Belum";
+      if (urls.length === 1) return "✅ 1 Doc";
+      return `✅ ${urls.length} Doc`;
     }
   }
 };
@@ -104,6 +162,7 @@ export default {
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 5px;
+  min-width: 200px;
 }
 
 .table-container {
@@ -130,14 +189,29 @@ export default {
   color: white;
 }
 
+.links-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .download-link {
   cursor: pointer;
   color: #007bff;
   text-decoration: none;
+  font-size: 0.875rem;
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .download-link:hover {
   text-decoration: underline;
+  background: #e9ecef;
 }
 
 @media (max-width: 768px) {
@@ -147,6 +221,15 @@ export default {
   }
   .report-container {
     padding: 0.5rem;
+  }
+  
+  .filter-container select {
+    min-width: 150px;
+  }
+  
+  .download-link {
+    font-size: 0.75rem;
+    padding: 0.125rem;
   }
 }
 </style>
