@@ -190,7 +190,14 @@
       </div>
 
       <div class="actions">
-        <button type="submit" class="btn-submit">Submit</button>
+        <button 
+          type="submit" 
+          class="btn-submit"
+          :disabled="isSubmitting"
+        >
+          <span v-if="isSubmitting" class="spinner"></span>
+          {{ isSubmitting ? 'Mengirim...' : 'Submit' }}
+        </button>
       </div>
     </form>
 
@@ -227,6 +234,56 @@
           </button>
         </div>
         <button @click="showDocOptions = false" class="btn-cancel">Batal</button>
+      </div>
+    </div>
+
+    <!-- Toast Notification System -->
+    <div class="toast-container">
+      <div 
+        v-for="toast in toasts" 
+        :key="toast.id"
+        :class="[
+          'toast',
+          `toast-${toast.type}`,
+          { 'toast-show': toast.show }
+        ]"
+      >
+        <div class="toast-icon">
+          <span v-if="toast.type === 'success'">✅</span>
+          <span v-else-if="toast.type === 'error'">❌</span>
+          <span v-else-if="toast.type === 'warning'">⚠️</span>
+          <span v-else-if="toast.type === 'info'">ℹ️</span>
+          <span v-else-if="toast.type === 'loading'" class="loading-icon">⏳</span>
+        </div>
+        <div class="toast-content">
+          <div class="toast-title">{{ toast.title }}</div>
+          <div v-if="toast.message" class="toast-message">{{ toast.message }}</div>
+        </div>
+        <button 
+          v-if="!toast.autoHide" 
+          @click="removeToast(toast.id)" 
+          class="toast-close"
+        >
+          ×
+        </button>
+        <div 
+          v-if="toast.autoHide && toast.progress !== undefined" 
+          class="toast-progress"
+          :style="{ width: toast.progress + '%' }"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="showLoadingOverlay" class="loading-overlay">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <h3>{{ loadingText }}</h3>
+        <p>{{ loadingSubtext }}</p>
+        <div class="loading-progress">
+          <div class="progress-bar" :style="{ width: uploadProgress + '%' }"></div>
+        </div>
+        <span class="progress-text">{{ uploadProgress }}%</span>
       </div>
     </div>
   </div>
@@ -275,11 +332,117 @@ export default {
     const docGalleryInput = ref(null)
     const docCameraInput = ref(null)
 
+    // Loading states
+    const isSubmitting = ref(false)
+    const showLoadingOverlay = ref(false)
+    const loadingText = ref('')
+    const loadingSubtext = ref('')
+    const uploadProgress = ref(0)
+
+    // Toast notifications
+    const toasts = ref([])
+    let toastIdCounter = 0
+
     // Detect iOS device
     onMounted(() => {
       isIOS.value = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     })
+
+    // Toast notification functions
+    function showToast(type, title, message = '', options = {}) {
+      const toast = {
+        id: ++toastIdCounter,
+        type,
+        title,
+        message,
+        show: false,
+        autoHide: options.autoHide !== false,
+        duration: options.duration || 4000,
+        progress: options.autoHide !== false ? 100 : undefined
+      }
+
+      toasts.value.push(toast)
+
+      // Trigger animation
+      setTimeout(() => {
+        toast.show = true
+      }, 10)
+
+      // Auto hide with progress
+      if (toast.autoHide) {
+        const interval = setInterval(() => {
+          toast.progress -= (100 / (toast.duration / 100))
+          if (toast.progress <= 0) {
+            clearInterval(interval)
+            removeToast(toast.id)
+          }
+        }, 100)
+      }
+
+      return toast.id
+    }
+
+    function removeToast(id) {
+      const index = toasts.value.findIndex(t => t.id === id)
+      if (index > -1) {
+        toasts.value[index].show = false
+        setTimeout(() => {
+          toasts.value.splice(index, 1)
+        }, 300)
+      }
+    }
+
+    function clearAllToasts() {
+      toasts.value.forEach(toast => {
+        toast.show = false
+      })
+      setTimeout(() => {
+        toasts.value.splice(0)
+      }, 300)
+    }
+
+    // Specific toast types
+    function showSuccessToast(title, message = '') {
+      return showToast('success', title, message, { duration: 3000 })
+    }
+
+    function showErrorToast(title, message = '') {
+      return showToast('error', title, message, { duration: 5000 })
+    }
+
+    function showWarningToast(title, message = '') {
+      return showToast('warning', title, message, { duration: 4000 })
+    }
+
+    function showInfoToast(title, message = '') {
+      return showToast('info', title, message, { duration: 4000 })
+    }
+
+    function showLoadingToast(title, message = '') {
+      return showToast('loading', title, message, { autoHide: false })
+    }
+
+    // Loading overlay functions
+    function showLoading(text, subtext = '', progress = 0) {
+      loadingText.value = text
+      loadingSubtext.value = subtext
+      uploadProgress.value = progress
+      showLoadingOverlay.value = true
+    }
+
+    function updateLoading(text, subtext = '', progress) {
+      loadingText.value = text
+      loadingSubtext.value = subtext
+      if (progress !== undefined) {
+        uploadProgress.value = progress
+      }
+    }
+
+    function hideLoading() {
+      showLoadingOverlay.value = false
+      uploadProgress.value = 0
+    }
 
     // Create object URL untuk preview
     function createFileObject(file) {
@@ -315,9 +478,15 @@ export default {
 
     function onFotoChange(e) {
       const files = Array.from(e.target.files)
-      files.forEach(file => {
-        fotoFiles.value.push(createFileObject(file))
-      })
+      if (files.length > 0) {
+        files.forEach(file => {
+          fotoFiles.value.push(createFileObject(file))
+        })
+        showSuccessToast(
+          'Foto berhasil ditambahkan!', 
+          `${files.length} foto DEC telah dipilih`
+        )
+      }
       showFotoOptions.value = false
       
       // Reset input untuk bisa pilih file yang sama lagi
@@ -326,9 +495,15 @@ export default {
 
     function onDocChange(e) {
       const files = Array.from(e.target.files)
-      files.forEach(file => {
-        docFiles.value.push(createFileObject(file))
-      })
+      if (files.length > 0) {
+        files.forEach(file => {
+          docFiles.value.push(createFileObject(file))
+        })
+        showSuccessToast(
+          'Dokumen berhasil ditambahkan!', 
+          `${files.length} dokumen telah dipilih`
+        )
+      }
       showDocOptions.value = false
       
       // Reset input untuk bisa pilih file yang sama lagi
@@ -342,6 +517,7 @@ export default {
         URL.revokeObjectURL(foto.url)
       }
       fotoFiles.value.splice(index, 1)
+      showInfoToast('Foto dihapus', 'Foto DEC berhasil dihapus dari daftar')
     }
 
     // Remove dokumen
@@ -351,6 +527,7 @@ export default {
         URL.revokeObjectURL(doc.url)
       }
       docFiles.value.splice(index, 1)
+      showInfoToast('Dokumen dihapus', 'Dokumen berhasil dihapus dari daftar')
     }
 
     // Functions untuk Android modal
@@ -370,7 +547,7 @@ export default {
       docGalleryInput.value.click()
     }
 
-    async function uploadToStorage(file, folder) {
+    async function uploadToStorage(file, folder, onProgress) {
       try {
         console.log(`📤 Upload ${file.name} ke folder ${folder}...`)
         const fileName = `${folder}/${Date.now()}_${file.name}`
@@ -403,11 +580,27 @@ export default {
       try {
         console.log('🚀 Mulai submit...')
         
+        // Clear existing toasts
+        clearAllToasts()
+        
         // Validasi foto DEC harus ada
         if (fotoFiles.value.length === 0) {
-          alert('Foto DEC wajib diupload!')
+          showErrorToast(
+            'Foto DEC wajib diupload!', 
+            'Silakan tambahkan minimal 1 foto DEC sebelum submit'
+          )
           return
         }
+        
+        // Set loading state
+        isSubmitting.value = true
+        
+        // Show loading overlay
+        showLoading(
+          'Memproses data...', 
+          'Sedang memvalidasi koneksi ke server', 
+          10
+        )
         
         // Test koneksi Supabase
         console.log('🔌 Test koneksi ke Supabase...')
@@ -417,30 +610,40 @@ export default {
         
         if (testError) {
           console.error('❌ Koneksi ke Supabase gagal:', testError)
-          alert(`Koneksi gagal: ${testError.message}`)
+          hideLoading()
+          isSubmitting.value = false
+          showErrorToast(
+            'Koneksi ke server gagal!', 
+            `Error: ${testError.message}`
+          )
           return
         } else {
           console.log('✅ Koneksi ke Supabase berhasil. Total data:', testData)
+          updateLoading(
+            'Koneksi berhasil!', 
+            'Mulai mengupload file...', 
+            20
+          )
         }
         
-        console.log('📝 Data form:', {
-          tanggal: tanggal.value,
-          bulan: bulan.value,
-          sales: sales.value,
-          nama_customer: nama_customer.value,
-          penerima: penerima.value,
-          alasan: alasan_bukan_pemilik.value,
-          fotoCount: fotoFiles.value.length,
-          docCount: docFiles.value.length
-        })
-
+        const totalFiles = fotoFiles.value.length + docFiles.value.length
+        let uploadedFiles = 0
+        
         // Upload semua foto DEC
         let fotoURLs = []
         if (fotoFiles.value.length > 0) {
           console.log(`📸 Upload ${fotoFiles.value.length} foto DEC...`)
+          
           for (let i = 0; i < fotoFiles.value.length; i++) {
+            updateLoading(
+              `Upload foto DEC ${i + 1}/${fotoFiles.value.length}...`, 
+              `File: ${fotoFiles.value[i].file.name}`, 
+              20 + (uploadedFiles / totalFiles) * 60
+            )
+            
             const url = await uploadToStorage(fotoFiles.value[i].file, 'dec')
             fotoURLs.push(url)
+            uploadedFiles++
             console.log(`✅ Foto DEC ${i+1} berhasil:`, url)
           }
         }
@@ -449,12 +652,26 @@ export default {
         let docURLs = []
         if (docFiles.value.length > 0) {
           console.log(`📄 Upload ${docFiles.value.length} dokumen...`)
+          
           for (let i = 0; i < docFiles.value.length; i++) {
+            updateLoading(
+              `Upload dokumen ${i + 1}/${docFiles.value.length}...`, 
+              `File: ${docFiles.value[i].file.name}`, 
+              20 + (uploadedFiles / totalFiles) * 60
+            )
+            
             const url = await uploadToStorage(docFiles.value[i].file, 'dokumen')
             docURLs.push(url)
+            uploadedFiles++
             console.log(`✅ Dokumen ${i+1} berhasil:`, url)
           }
         }
+
+        updateLoading(
+          'Upload selesai!', 
+          'Menyimpan data ke database...', 
+          85
+        )
 
         const dataToInsert = {
           tanggal_penyerahan: tanggal.value,
@@ -477,17 +694,52 @@ export default {
 
         console.log('📊 Response dari Supabase:', { error, inserted })
 
+        updateLoading(
+          'Menyelesaikan proses...', 
+          'Hampir selesai...', 
+          95
+        )
+
+        // Simulate final processing
+        await new Promise(resolve => setTimeout(resolve, 500))
+
         if (error) {
           console.error('❌ Error detail dari Supabase:', error)
-          alert(`Gagal insert ke database: ${error.message}`)
+          hideLoading()
+          isSubmitting.value = false
+          showErrorToast(
+            'Gagal menyimpan data!', 
+            `Database error: ${error.message}`
+          )
         } else {
           console.log('✅ Data berhasil dikirim ke Supabase:', inserted)
-          alert('✅ Data berhasil dikirim!')
-          resetForm()
+          updateLoading(
+            'Berhasil!', 
+            'Data telah tersimpan', 
+            100
+          )
+          
+          // Wait a moment then hide loading
+          setTimeout(() => {
+            hideLoading()
+            isSubmitting.value = false
+            
+            showSuccessToast(
+              '🎉 Data berhasil dikirim!', 
+              `Form penyerahan unit telah berhasil disimpan dengan ${fotoFiles.value.length} foto DEC dan ${docFiles.value.length} dokumen`
+            )
+            
+            resetForm()
+          }, 1000)
         }
       } catch (err) {
         console.error('❌ Error saat submit:', err)
-        alert(`Error: ${err.message}`)
+        hideLoading()
+        isSubmitting.value = false
+        showErrorToast(
+          'Terjadi kesalahan sistem!', 
+          `Error: ${err.message || 'Unknown error'}`
+        )
       }
     }
 
@@ -517,6 +769,8 @@ export default {
       inputs.forEach(input => {
         if (input.value) input.value.value = ''
       })
+
+      showInfoToast('Form direset', 'Form telah dikosongkan dan siap untuk data baru')
     }
 
     return {
@@ -529,7 +783,10 @@ export default {
       onFotoChange, onDocChange, onSubmit,
       removeFoto, removeDoc,
       selectFotoFromCamera, selectFotoFromGallery,
-      selectDocFromCamera, selectDocFromGallery
+      selectDocFromCamera, selectDocFromGallery,
+      // Loading and notification states
+      isSubmitting, showLoadingOverlay, loadingText, loadingSubtext, uploadProgress,
+      toasts, removeToast
     }
   }
 }
@@ -543,6 +800,7 @@ export default {
   box-shadow: 0 6px 20px rgba(0,0,0,0.08);
   max-width: 600px;
   margin: auto;
+  position: relative;
 }
 
 .mb-3 {
@@ -776,10 +1034,41 @@ select {
   border-radius: 8px;
   border: none;
   cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  justify-content: center;
 }
 
-.btn-submit:hover {
+.btn-submit:hover:not(:disabled) {
   background: #ff0000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(183, 0, 0, 0.3);
+}
+
+.btn-submit:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .main-label {
@@ -848,6 +1137,233 @@ label {
   font-weight: 600;
 }
 
+/* Toast Notification System */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 400px;
+  width: calc(100vw - 40px);
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toast-show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast-success {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-left: 4px solid #28a745;
+  color: #155724;
+}
+
+.toast-error {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  border-left: 4px solid #dc3545;
+  color: #721c24;
+}
+
+.toast-warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border-left: 4px solid #ffc107;
+  color: #856404;
+}
+
+.toast-info {
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+  border-left: 4px solid #17a2b8;
+  color: #0c5460;
+}
+
+.toast-loading {
+  background: linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%);
+  border-left: 4px solid #6c757d;
+  color: #383d41;
+}
+
+.toast-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.loading-icon {
+  animation: spin 2s linear infinite;
+}
+
+.toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  margin-bottom: 0.25rem;
+}
+
+.toast-message {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  opacity: 0.9;
+  word-wrap: break-word;
+}
+
+.toast-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(0, 0, 0, 0.1);
+  color: inherit;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.toast-close:hover {
+  background: rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.6;
+  transition: width 0.1s linear;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.loading-content {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 350px;
+  width: 90%;
+  position: relative;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #b70000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1.5rem;
+}
+
+.loading-content h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.loading-content p {
+  margin: 0 0 1.5rem 0;
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.loading-progress {
+  background: #f0f0f0;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #b70000, #ff0000);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.4), 
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 600;
+}
+
 /* Responsif untuk mobile */
 @media (max-width: 600px) {
   .form-card {
@@ -897,6 +1413,40 @@ label {
     padding: 0.7rem 0.9rem;
     font-size: 0.9rem;
   }
+
+  .toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+  }
+
+  .toast {
+    padding: 0.85rem;
+  }
+
+  .toast-title {
+    font-size: 0.9rem;
+  }
+
+  .toast-message {
+    font-size: 0.8rem;
+  }
+
+  .loading-content {
+    padding: 2rem;
+    max-width: 300px;
+  }
+
+  .loading-content h3 {
+    font-size: 1.1rem;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 /* Untuk layar sangat kecil */
@@ -921,6 +1471,36 @@ label {
   .modal-content {
     max-width: 260px;
     padding: 1rem;
+  }
+
+  .toast {
+    padding: 0.75rem;
+  }
+
+  .loading-content {
+    padding: 1.5rem;
+    max-width: 280px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .toast-container {
+    filter: brightness(0.9);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .loading-spinner,
+  .spinner,
+  .progress-bar::after {
+    animation: none !important;
+  }
+  
+  .btn-submit:hover:not(:disabled) {
+    transform: none;
   }
 }
 </style>
