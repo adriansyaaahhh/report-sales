@@ -1,797 +1,3 @@
-<template>
-  <div class="card form-card">
-    <h2>📝 Form Penyerahan Unit</h2>
-    <form @submit.prevent="onSubmit" id="formPenyerahan">
-      <div class="mb-3">
-        <label>Tanggal Penyerahan *</label>
-        <input type="date" v-model="tanggal" required />
-      </div>
-
-      <div class="mb-3">
-        <label>Bulan BP</label>
-        <select v-model="bulan" required>
-          <option value="">Pilih Bulan</option>
-          <option v-for="b in bulanList" :key="b">{{ b }}</option>
-        </select>
-      </div>
-
-      <div class="mb-3">
-        <label>Sales *</label>
-        <select v-model="sales" required>
-          <option value="">Pilih Sales</option>
-          <option v-for="s in salesList" :key="s">{{ s }}</option>
-        </select>
-      </div>
-
-      <div class="mb-3">
-        <label>Nama Customer</label>
-        <input type="text" v-model="nama_customer" />
-      </div>
-
-      <div class="mb-3">
-        <label>Upload Foto DEC *</label>
-        <!-- iOS: Native picker | Android: Custom modal -->
-        <div class="file-upload-container">
-          <button 
-            type="button" 
-            @click="handleFotoUploadClick" 
-            class="btn-choose-file"
-          >
-            📸 Tambah Foto DEC
-          </button>
-          
-          <!-- Input file tersembunyi untuk iOS -->
-          <input 
-            ref="fotoInput"
-            type="file" 
-            @change="onFotoChange" 
-            accept="image/*" 
-            multiple
-            style="display: none;"
-          />
-          
-          <!-- Input file tersembunyi untuk Android - Gallery -->
-          <input 
-            ref="fotoGalleryInput"
-            type="file" 
-            @change="onFotoChange" 
-            accept="image/*" 
-            multiple
-            style="display: none;"
-          />
-          
-          <!-- Input file tersembunyi untuk Android - Camera -->
-          <input 
-            ref="fotoCameraInput"
-            type="file" 
-            @change="onFotoChange" 
-            accept="image/*" 
-            capture="environment"
-            style="display: none;"
-          />
-        </div>
-
-        <!-- Preview Foto DEC -->
-        <div v-if="fotoFiles.length > 0" class="preview-container">
-          <h4>Foto DEC ({{ fotoFiles.length }})</h4>
-          <div class="preview-grid">
-            <div 
-              v-for="(foto, index) in fotoFiles" 
-              :key="`foto-${index}`" 
-              class="preview-item"
-            >
-              <img :src="foto.url" :alt="`Foto DEC ${index + 1}`" />
-              <button 
-                type="button" 
-                @click="removeFoto(index)" 
-                class="remove-btn"
-                title="Hapus foto"
-              >
-                ×
-              </button>
-              <p class="file-name">{{ foto.file.name }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="main-label">Penerima Unit *</label>
-        <div class="radio-container">
-          <div class="radio-item">
-            <label for="pemilik" class="radio-label">Pemilik</label>
-            <input type="radio" id="pemilik" value="Pemilik" v-model="penerima" required />
-          </div>
-          <div class="radio-item">
-            <label for="perwakilan" class="radio-label">Perwakilan</label>
-            <input type="radio" id="perwakilan" value="Perwakilan" v-model="penerima" required />
-          </div>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label>Alasan jika bukan pemilik</label>
-        <input type="text" v-model="alasan_bukan_pemilik" />
-      </div>
-
-      <div class="mb-3">
-        <label>Doc Pendukung Perwakilan</label>
-        <div class="file-upload-container">
-          <button 
-            type="button" 
-            @click="handleDocUploadClick" 
-            class="btn-choose-file"
-          >
-            📄 Tambah Dokumen
-          </button>
-          
-          <!-- Input file tersembunyi untuk iOS -->
-          <input 
-            ref="docInput"
-            type="file" 
-            @change="onDocChange" 
-            accept="application/pdf,image/*" 
-            multiple
-            style="display: none;"
-          />
-          
-          <!-- Input file tersembunyi untuk Android - Gallery -->
-          <input 
-            ref="docGalleryInput"
-            type="file" 
-            @change="onDocChange" 
-            accept="application/pdf,image/*" 
-            multiple
-            style="display: none;"
-          />
-          
-          <!-- Input file tersembunyi untuk Android - Camera -->
-          <input 
-            ref="docCameraInput"
-            type="file" 
-            @change="onDocChange" 
-            accept="image/*" 
-            capture="environment"
-            style="display: none;"
-          />
-        </div>
-
-        <!-- Preview Dokumen -->
-        <div v-if="docFiles.length > 0" class="preview-container">
-          <h4>Dokumen ({{ docFiles.length }})</h4>
-          <div class="preview-grid">
-            <div 
-              v-for="(doc, index) in docFiles" 
-              :key="`doc-${index}`" 
-              class="preview-item"
-            >
-              <div class="doc-preview">
-                <img 
-                  v-if="doc.isImage" 
-                  :src="doc.url" 
-                  :alt="`Dokumen ${index + 1}`" 
-                />
-                <div v-else class="pdf-icon">
-                  📄
-                </div>
-              </div>
-              <button 
-                type="button" 
-                @click="removeDoc(index)" 
-                class="remove-btn"
-                title="Hapus dokumen"
-              >
-                ×
-              </button>
-              <p class="file-name">{{ doc.file.name }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button 
-          type="submit" 
-          class="btn-submit"
-          :disabled="isSubmitting"
-        >
-          <span v-if="isSubmitting" class="spinner"></span>
-          {{ isSubmitting ? 'Mengirim...' : 'Submit' }}
-        </button>
-      </div>
-    </form>
-
-    <!-- Modal pilihan untuk Android - Foto DEC -->
-    <div v-if="showFotoOptions" class="modal-overlay" @click="showFotoOptions = false">
-      <div class="modal-content" @click.stop>
-        <h3>Pilih Sumber Foto DEC</h3>
-        <div class="option-buttons">
-          <button @click="selectFotoFromCamera" class="option-btn camera-btn">
-            <span class="icon">📷</span>
-            Ambil Foto
-          </button>
-          <button @click="selectFotoFromGallery" class="option-btn gallery-btn">
-            <span class="icon">🖼️</span>
-            Pilih dari Gallery
-          </button>
-        </div>
-        <button @click="showFotoOptions = false" class="btn-cancel">Batal</button>
-      </div>
-    </div>
-
-    <!-- Modal pilihan untuk Android - Dokumen -->
-    <div v-if="showDocOptions" class="modal-overlay" @click="showDocOptions = false">
-      <div class="modal-content" @click.stop>
-        <h3>Pilih Sumber Dokumen</h3>
-        <div class="option-buttons">
-          <button @click="selectDocFromCamera" class="option-btn camera-btn">
-            <span class="icon">📷</span>
-            Ambil Foto
-          </button>
-          <button @click="selectDocFromGallery" class="option-btn gallery-btn">
-            <span class="icon">📁</span>
-            Pilih File
-          </button>
-        </div>
-        <button @click="showDocOptions = false" class="btn-cancel">Batal</button>
-      </div>
-    </div>
-
-    <!-- Toast Notification System -->
-    <div class="toast-container">
-      <div 
-        v-for="toast in toasts" 
-        :key="toast.id"
-        :class="[
-          'toast',
-          `toast-${toast.type}`,
-          { 'toast-show': toast.show }
-        ]"
-      >
-        <div class="toast-icon">
-          <span v-if="toast.type === 'success'">✅</span>
-          <span v-else-if="toast.type === 'error'">❌</span>
-          <span v-else-if="toast.type === 'warning'">⚠️</span>
-          <span v-else-if="toast.type === 'info'">ℹ️</span>
-          <span v-else-if="toast.type === 'loading'" class="loading-icon">⏳</span>
-        </div>
-        <div class="toast-content">
-          <div class="toast-title">{{ toast.title }}</div>
-          <div v-if="toast.message" class="toast-message">{{ toast.message }}</div>
-        </div>
-        <button 
-          v-if="!toast.autoHide" 
-          @click="removeToast(toast.id)" 
-          class="toast-close"
-        >
-          ×
-        </button>
-        <div 
-          v-if="toast.autoHide && toast.progress !== undefined" 
-          class="toast-progress"
-          :style="{ width: toast.progress + '%' }"
-        ></div>
-      </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div v-if="showLoadingOverlay" class="loading-overlay">
-      <div class="loading-content">
-        <div class="loading-spinner"></div>
-        <h3>{{ loadingText }}</h3>
-        <p>{{ loadingSubtext }}</p>
-        <div class="loading-progress">
-          <div class="progress-bar" :style="{ width: uploadProgress + '%' }"></div>
-        </div>
-        <span class="progress-text">{{ uploadProgress }}%</span>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script>
-import { ref, onMounted } from 'vue'
-import { supabase } from '../supabase'
-
-export default {
-  name: 'FormPenyerahan',
-  setup() {
-    const bulanList = [
-      "Januari","Februari","Maret","April","Mei","Juni",
-      "Juli","Agustus","September","Oktober","November","Desember"
-    ]
-
-    const salesList = [
-      "ADE YULIA","ADRIANTO","AULIA NOPRI","AZIS","DENI SAHPUTRA",
-      "FAHRIZAN HUTASUHUT","JIMMY PRATAMA","MHD REZKI","MUHAMMAD FAJAR",
-      "MUHAMMAD NUR","RANDI SAPUTRA","RISKI ERISMA IHSAN","RITA ATRIA",
-      "RONAL EKA PUTRA","SYAFITRI ALHAPI"
-    ]
-
-    const tanggal = ref('')
-    const bulan = ref('')
-    const sales = ref('')
-    const nama_customer = ref('')
-    const penerima = ref('')
-    const alasan_bukan_pemilik = ref('')
-    
-    // Multiple files
-    const fotoFiles = ref([])
-    const docFiles = ref([])
-
-    // Device detection
-    const isIOS = ref(false)
-    
-    // Refs untuk modal dan input elements
-    const showFotoOptions = ref(false)
-    const showDocOptions = ref(false)
-    const fotoInput = ref(null)
-    const fotoGalleryInput = ref(null)
-    const fotoCameraInput = ref(null)
-    const docInput = ref(null)
-    const docGalleryInput = ref(null)
-    const docCameraInput = ref(null)
-
-    // Loading states
-    const isSubmitting = ref(false)
-    const showLoadingOverlay = ref(false)
-    const loadingText = ref('')
-    const loadingSubtext = ref('')
-    const uploadProgress = ref(0)
-
-    // Toast notifications
-    const toasts = ref([])
-    let toastIdCounter = 0
-
-    // Detect iOS device
-    onMounted(() => {
-      isIOS.value = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-    })
-
-    // Toast notification functions
-    function showToast(type, title, message = '', options = {}) {
-      const toast = {
-        id: ++toastIdCounter,
-        type,
-        title,
-        message,
-        show: false,
-        autoHide: options.autoHide !== false,
-        duration: options.duration || 4000,
-        progress: options.autoHide !== false ? 100 : undefined
-      }
-
-      toasts.value.push(toast)
-
-      // Trigger animation
-      setTimeout(() => {
-        toast.show = true
-      }, 10)
-
-      // Auto hide with progress
-      if (toast.autoHide) {
-        const interval = setInterval(() => {
-          toast.progress -= (100 / (toast.duration / 100))
-          if (toast.progress <= 0) {
-            clearInterval(interval)
-            removeToast(toast.id)
-          }
-        }, 100)
-      }
-
-      return toast.id
-    }
-
-    function removeToast(id) {
-      const index = toasts.value.findIndex(t => t.id === id)
-      if (index > -1) {
-        toasts.value[index].show = false
-        setTimeout(() => {
-          toasts.value.splice(index, 1)
-        }, 300)
-      }
-    }
-
-    function clearAllToasts() {
-      toasts.value.forEach(toast => {
-        toast.show = false
-      })
-      setTimeout(() => {
-        toasts.value.splice(0)
-      }, 300)
-    }
-
-    // Specific toast types
-    function showSuccessToast(title, message = '') {
-      return showToast('success', title, message, { duration: 3000 })
-    }
-
-    function showErrorToast(title, message = '') {
-      return showToast('error', title, message, { duration: 5000 })
-    }
-
-    function showWarningToast(title, message = '') {
-      return showToast('warning', title, message, { duration: 4000 })
-    }
-
-    function showInfoToast(title, message = '') {
-      return showToast('info', title, message, { duration: 4000 })
-    }
-
-    function showLoadingToast(title, message = '') {
-      return showToast('loading', title, message, { autoHide: false })
-    }
-
-    // Loading overlay functions
-    function showLoading(text, subtext = '', progress = 0) {
-      loadingText.value = text
-      loadingSubtext.value = subtext
-      uploadProgress.value = progress
-      showLoadingOverlay.value = true
-    }
-
-    function updateLoading(text, subtext = '', progress) {
-      loadingText.value = text
-      loadingSubtext.value = subtext
-      if (progress !== undefined) {
-        uploadProgress.value = progress
-      }
-    }
-
-    function hideLoading() {
-      showLoadingOverlay.value = false
-      uploadProgress.value = 0
-    }
-
-    // Create object URL untuk preview
-    function createFileObject(file) {
-      const isImage = file.type.startsWith('image/')
-      return {
-        file: file,
-        url: isImage ? URL.createObjectURL(file) : null,
-        isImage: isImage
-      }
-    }
-
-    // Handle foto upload click
-    function handleFotoUploadClick() {
-      if (isIOS.value) {
-        // iOS: gunakan native picker
-        fotoInput.value.click()
-      } else {
-        // Android: gunakan modal
-        showFotoOptions.value = true
-      }
-    }
-
-    // Handle dokumen upload click
-    function handleDocUploadClick() {
-      if (isIOS.value) {
-        // iOS: gunakan native picker
-        docInput.value.click()
-      } else {
-        // Android: gunakan modal
-        showDocOptions.value = true
-      }
-    }
-
-    function onFotoChange(e) {
-      const files = Array.from(e.target.files)
-      if (files.length > 0) {
-        files.forEach(file => {
-          fotoFiles.value.push(createFileObject(file))
-        })
-        showSuccessToast(
-          'Foto berhasil ditambahkan!', 
-          `${files.length} foto DEC telah dipilih`
-        )
-      }
-      showFotoOptions.value = false
-      
-      // Reset input untuk bisa pilih file yang sama lagi
-      e.target.value = ''
-    }
-
-    function onDocChange(e) {
-      const files = Array.from(e.target.files)
-      if (files.length > 0) {
-        files.forEach(file => {
-          docFiles.value.push(createFileObject(file))
-        })
-        showSuccessToast(
-          'Dokumen berhasil ditambahkan!', 
-          `${files.length} dokumen telah dipilih`
-        )
-      }
-      showDocOptions.value = false
-      
-      // Reset input untuk bisa pilih file yang sama lagi
-      e.target.value = ''
-    }
-
-    // Remove foto
-    function removeFoto(index) {
-      const foto = fotoFiles.value[index]
-      if (foto.url) {
-        URL.revokeObjectURL(foto.url)
-      }
-      fotoFiles.value.splice(index, 1)
-      showInfoToast('Foto dihapus', 'Foto DEC berhasil dihapus dari daftar')
-    }
-
-    // Remove dokumen
-    function removeDoc(index) {
-      const doc = docFiles.value[index]
-      if (doc.url) {
-        URL.revokeObjectURL(doc.url)
-      }
-      docFiles.value.splice(index, 1)
-      showInfoToast('Dokumen dihapus', 'Dokumen berhasil dihapus dari daftar')
-    }
-
-    // Functions untuk Android modal
-    function selectFotoFromCamera() {
-      fotoCameraInput.value.click()
-    }
-
-    function selectFotoFromGallery() {
-      fotoGalleryInput.value.click()
-    }
-
-    function selectDocFromCamera() {
-      docCameraInput.value.click()
-    }
-
-    function selectDocFromGallery() {
-      docGalleryInput.value.click()
-    }
-
-    async function uploadToStorage(file, folder, onProgress) {
-      try {
-        console.log(`📤 Upload ${file.name} ke folder ${folder}...`)
-        const fileName = `${folder}/${Date.now()}_${file.name}`
-        
-        const { data: uploadData, error: uploadError } = await supabase
-          .storage
-          .from('foto-penyerahan')
-          .upload(fileName, file)
-
-        if (uploadError) {
-          console.error('❌ Upload error:', uploadError)
-          throw uploadError
-        }
-
-        console.log('✅ Upload berhasil:', uploadData)
-
-        const { data: urlData } = supabase.storage
-          .from('foto-penyerahan')
-          .getPublicUrl(fileName)
-        
-        console.log('🔗 Public URL:', urlData.publicUrl)
-        return urlData.publicUrl
-      } catch (error) {
-        console.error('❌ Error di uploadToStorage:', error)
-        throw error
-      }
-    }
-
-    async function onSubmit() {
-      try {
-        console.log('🚀 Mulai submit...')
-        
-        // Clear existing toasts
-        clearAllToasts()
-        
-        // Validasi foto DEC harus ada
-        if (fotoFiles.value.length === 0) {
-          showErrorToast(
-            'Foto DEC wajib diupload!', 
-            'Silakan tambahkan minimal 1 foto DEC sebelum submit'
-          )
-          return
-        }
-        
-        // Set loading state
-        isSubmitting.value = true
-        
-        // Show loading overlay
-        showLoading(
-          'Memproses data...', 
-          'Sedang memvalidasi koneksi ke server', 
-          10
-        )
-        
-        // Test koneksi Supabase
-        console.log('🔌 Test koneksi ke Supabase...')
-        const { data: testData, error: testError } = await supabase
-          .from('penyerahan_unit')
-          .select('count', { count: 'exact', head: true })
-        
-        if (testError) {
-          console.error('❌ Koneksi ke Supabase gagal:', testError)
-          hideLoading()
-          isSubmitting.value = false
-          showErrorToast(
-            'Koneksi ke server gagal!', 
-            `Error: ${testError.message}`
-          )
-          return
-        } else {
-          console.log('✅ Koneksi ke Supabase berhasil. Total data:', testData)
-          updateLoading(
-            'Koneksi berhasil!', 
-            'Mulai mengupload file...', 
-            20
-          )
-        }
-        
-        const totalFiles = fotoFiles.value.length + docFiles.value.length
-        let uploadedFiles = 0
-        
-        // Upload semua foto DEC
-        let fotoURLs = []
-        if (fotoFiles.value.length > 0) {
-          console.log(`📸 Upload ${fotoFiles.value.length} foto DEC...`)
-          
-          for (let i = 0; i < fotoFiles.value.length; i++) {
-            updateLoading(
-              `Upload foto DEC ${i + 1}/${fotoFiles.value.length}...`, 
-              `File: ${fotoFiles.value[i].file.name}`, 
-              20 + (uploadedFiles / totalFiles) * 60
-            )
-            
-            const url = await uploadToStorage(fotoFiles.value[i].file, 'dec')
-            fotoURLs.push(url)
-            uploadedFiles++
-            console.log(`✅ Foto DEC ${i+1} berhasil:`, url)
-          }
-        }
-
-        // Upload semua dokumen
-        let docURLs = []
-        if (docFiles.value.length > 0) {
-          console.log(`📄 Upload ${docFiles.value.length} dokumen...`)
-          
-          for (let i = 0; i < docFiles.value.length; i++) {
-            updateLoading(
-              `Upload dokumen ${i + 1}/${docFiles.value.length}...`, 
-              `File: ${docFiles.value[i].file.name}`, 
-              20 + (uploadedFiles / totalFiles) * 60
-            )
-            
-            const url = await uploadToStorage(docFiles.value[i].file, 'dokumen')
-            docURLs.push(url)
-            uploadedFiles++
-            console.log(`✅ Dokumen ${i+1} berhasil:`, url)
-          }
-        }
-
-        updateLoading(
-          'Upload selesai!', 
-          'Menyimpan data ke database...', 
-          85
-        )
-
-        const dataToInsert = {
-          tanggal_penyerahan: tanggal.value,
-          bulan_bp: bulan.value,
-          sales: sales.value,
-          nama_customer: nama_customer.value,
-          penerima_unit: penerima.value,
-          alasan_bukan_pemilik: alasan_bukan_pemilik.value,
-          foto_dec_url: JSON.stringify(fotoURLs), // Multiple URLs as JSON string
-          doc_perwakilan_url: JSON.stringify(docURLs), // Multiple URLs as JSON string
-          created_at: new Date().toISOString()
-        }
-        
-        console.log('💾 Data yang akan disimpan:', dataToInsert)
-
-        const { error, data: inserted } = await supabase
-          .from('penyerahan_unit')
-          .insert([dataToInsert])
-          .select()
-
-        console.log('📊 Response dari Supabase:', { error, inserted })
-
-        updateLoading(
-          'Menyelesaikan proses...', 
-          'Hampir selesai...', 
-          95
-        )
-
-        // Simulate final processing
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        if (error) {
-          console.error('❌ Error detail dari Supabase:', error)
-          hideLoading()
-          isSubmitting.value = false
-          showErrorToast(
-            'Gagal menyimpan data!', 
-            `Database error: ${error.message}`
-          )
-        } else {
-          console.log('✅ Data berhasil dikirim ke Supabase:', inserted)
-          updateLoading(
-            'Berhasil!', 
-            'Data telah tersimpan', 
-            100
-          )
-          
-          // Wait a moment then hide loading
-          setTimeout(() => {
-            hideLoading()
-            isSubmitting.value = false
-            
-            showSuccessToast(
-              '🎉 Data berhasil dikirim!', 
-              `Form penyerahan unit telah berhasil disimpan dengan ${fotoFiles.value.length} foto DEC dan ${docFiles.value.length} dokumen`
-            )
-            
-            resetForm()
-          }, 1000)
-        }
-      } catch (err) {
-        console.error('❌ Error saat submit:', err)
-        hideLoading()
-        isSubmitting.value = false
-        showErrorToast(
-          'Terjadi kesalahan sistem!', 
-          `Error: ${err.message || 'Unknown error'}`
-        )
-      }
-    }
-
-    function resetForm() {
-      tanggal.value = ''
-      bulan.value = ''
-      sales.value = ''
-      nama_customer.value = ''
-      penerima.value = ''
-      alasan_bukan_pemilik.value = ''
-      
-      // Clear preview dan revoke URLs
-      fotoFiles.value.forEach(foto => {
-        if (foto.url) URL.revokeObjectURL(foto.url)
-      })
-      docFiles.value.forEach(doc => {
-        if (doc.url) URL.revokeObjectURL(doc.url)
-      })
-      
-      fotoFiles.value = []
-      docFiles.value = []
-      showFotoOptions.value = false
-      showDocOptions.value = false
-
-      // Reset semua file inputs
-      const inputs = [fotoInput, fotoGalleryInput, fotoCameraInput, docInput, docGalleryInput, docCameraInput]
-      inputs.forEach(input => {
-        if (input.value) input.value.value = ''
-      })
-
-      showInfoToast('Form direset', 'Form telah dikosongkan dan siap untuk data baru')
-    }
-
-    return {
-      bulanList, salesList,
-      tanggal, bulan, sales, nama_customer, penerima, alasan_bukan_pemilik,
-      fotoFiles, docFiles, isIOS,
-      showFotoOptions, showDocOptions,
-      fotoInput, fotoGalleryInput, fotoCameraInput, docInput, docGalleryInput, docCameraInput,
-      handleFotoUploadClick, handleDocUploadClick,
-      onFotoChange, onDocChange, onSubmit,
-      removeFoto, removeDoc,
-      selectFotoFromCamera, selectFotoFromGallery,
-      selectDocFromCamera, selectDocFromGallery,
-      // Loading and notification states
-      isSubmitting, showLoadingOverlay, loadingText, loadingSubtext, uploadProgress,
-      toasts, removeToast
-    }
-  }
-}
-</script>
-
 <style scoped>
 .form-card {
   background: white;
@@ -801,6 +7,179 @@ export default {
   max-width: 600px;
   margin: auto;
   position: relative;
+  min-height: 400px;
+}
+
+/* Selection Screen Styling */
+.selection-screen {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.header-section {
+  margin-bottom: 3rem;
+}
+
+.header-section h1 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0;
+  color: #666;
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+
+.selection-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.selection-btn {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  border: 2px solid #e9ecef;
+  border-radius: 16px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.selection-btn:hover {
+  border-color: #b70000;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(183, 0, 0, 0.15);
+}
+
+.showroom-btn:hover {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
+}
+
+.outside-btn:hover {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+  border-color: #007bff;
+  box-shadow: 0 8px 25px rgba(0, 123, 255, 0.15);
+}
+
+.selection-icon {
+  font-size: 2.5rem;
+  margin-right: 1.5rem;
+  flex-shrink: 0;
+}
+
+.selection-content {
+  flex: 1;
+}
+
+.selection-content h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.selection-content p {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.selection-arrow {
+  font-size: 1.5rem;
+  color: #666;
+  margin-left: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.selection-btn:hover .selection-arrow {
+  transform: translateX(5px);
+}
+
+/* Form Section Styling */
+.form-section {
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.form-header {
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.back-btn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: #495057;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.form-title {
+  text-align: center;
+  margin-left: 100px;
+  margin-right: 100px;
+}
+
+.form-title h2 {
+  margin: 0 0 0.75rem 0;
+  color: #333;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.jenis-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jenis-badge.showroom {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+  border: 1px solid #b8dabc;
+}
+
+.jenis-badge.outside {
+  background: linear-gradient(135deg, #cce7ff 0%, #b3d9ff 100%);
+  color: #004085;
+  border: 1px solid #9ec5fe;
 }
 
 .mb-3 {
@@ -809,12 +188,30 @@ export default {
 
 input[type="text"], 
 input[type="date"], 
+input[type="tel"],
+input[type="number"],
 select {
   width: 100%;
   padding: 0.5rem;
   border-radius: 6px;
   border: 1px solid #ddd;
   font-size: 1rem;
+}
+
+/* Styling khusus untuk input number */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Styling untuk input tel */
+input[type="tel"] {
+  letter-spacing: 0.5px;
 }
 
 /* File upload container */
@@ -1371,6 +768,48 @@ label {
     margin: 0.5rem;
   }
 
+  .selection-screen {
+    padding: 1.5rem 0;
+  }
+
+  .header-section h1 {
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .selection-container {
+    gap: 1.25rem;
+  }
+
+  .selection-btn {
+    padding: 1.25rem;
+  }
+
+  .selection-content h3 {
+    font-size: 1.1rem;
+  }
+
+  .selection-content p {
+    font-size: 0.9rem;
+  }
+
+  .form-title {
+    margin-left: 80px;
+    margin-right: 80px;
+  }
+
+  .form-title h2 {
+    font-size: 1.3rem;
+  }
+
+  .jenis-badge {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+
   .preview-grid {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 0.75rem;
@@ -1383,6 +822,8 @@ label {
 
   input[type="text"], 
   input[type="date"], 
+  input[type="tel"],
+  input[type="number"],
   select,
   .btn-choose-file {
     font-size: 0.9rem;
@@ -1456,6 +897,33 @@ label {
     padding: 0.75rem;
   }
 
+  .form-title {
+    margin-left: 60px;
+    margin-right: 60px;
+  }
+
+  .back-btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .selection-btn {
+    padding: 1rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .selection-icon {
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .selection-arrow {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+
   .preview-grid {
     grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   }
@@ -1495,12 +963,999 @@ label {
   .toast,
   .loading-spinner,
   .spinner,
-  .progress-bar::after {
+  .progress-bar::after,
+  .selection-screen {
     animation: none !important;
   }
   
-  .btn-submit:hover:not(:disabled) {
+  .btn-submit:hover:not(:disabled),
+  .selection-btn:hover {
     transform: none;
   }
 }
 </style>
+// ==============================
+// salesform.vue (as provided, unchanged)
+// ==============================
+<template>
+  <div class="card form-card">
+    <!-- Tampilan Awal: Pilihan Jenis Penyerahan -->
+    <div v-if="!jenisPenyerahan" class="selection-screen">
+      <div class="header-section">
+        <h1>📝 Form Penyerahan Unit</h1>
+        <p class="subtitle">Silakan pilih jenis penyerahan unit</p>
+      </div>
+      
+      <div class="selection-container">
+        <button 
+          @click="selectJenisPenyerahan('PENYERAHAN DI SHOWROOM')"
+          class="selection-btn showroom-btn"
+        >
+          <div class="selection-icon">🏢</div>
+          <div class="selection-content">
+            <h3>PENYERAHAN DI SHOWROOM</h3>
+            <p>Penyerahan unit dilakukan di showroom/dealer</p>
+          </div>
+          <div class="selection-arrow">→</div>
+        </button>
+
+        <button 
+          @click="selectJenisPenyerahan('PENYERAHAN DI LUAR SHOWROOM')"
+          class="selection-btn outside-btn"
+        >
+          <div class="selection-icon">🚚</div>
+          <div class="selection-content">
+            <h3>PENYERAHAN DI LUAR SHOWROOM</h3>
+            <p>Penyerahan unit dilakukan di luar showroom/dealer</p>
+          </div>
+          <div class="selection-arrow">→</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Form Penyerahan (ditampilkan setelah memilih jenis) -->
+    <div v-else class="form-section">
+      <!-- Header dengan info jenis penyerahan -->
+      <div class="form-header">
+        <button @click="backToSelection" class="back-btn">
+          ← Kembali
+        </button>
+        <div class="form-title">
+          <h2>📝 Form Penyerahan Unit</h2>
+          <div class="jenis-badge" :class="jenisPenyerahan === 'PENYERAHAN DI SHOWROOM' ? 'showroom' : 'outside'">
+            {{ jenisPenyerahan }}
+          </div>
+        </div>
+      </div>
+
+      <form @submit.prevent="onSubmit" id="formPenyerahan">
+        <div class="mb-3">
+          <label>Tanggal Penyerahan *</label>
+          <input type="date" v-model="tanggal" required />
+        </div>
+
+        <div class="mb-3">
+          <label>Bulan BP</label>
+          <select v-model="bulan" required>
+            <option value="">Pilih Bulan</option>
+            <option v-for="b in bulanList" :key="b">{{ b }}</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label>Sales *</label>
+          <select v-model="sales" required>
+            <option value="">Pilih Sales</option>
+            <option v-for="s in salesList" :key="s">{{ s }}</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label>Nama Customer</label>
+          <input type="text" v-model="nama_customer" />
+        </div>
+
+        <!-- Inputan Baru: Nomor HP -->
+        <div class="mb-3">
+          <label>Nomor HP</label>
+          <input type="tel" v-model="nomor_hp" placeholder="Contoh: 08123456789" />
+        </div>
+
+        <!-- Inputan Baru: Sisa Pembayaran -->
+<div class="mb-3">
+  <label>Sisa Pembayaran</label>
+  <input 
+    type="text" 
+    v-model="sisa_pembayaran" 
+    @input="onInputSisaPembayaran"
+    placeholder="Masukkan jumlah sisa pembayaran"
+  />
+</div>
+
+        <!-- Inputan Baru: PO Kontrak -->
+        <div class="mb-3">
+          <label class="main-label">PO Kontrak</label>
+          <div class="radio-container">
+            <div class="radio-item">
+              <label for="po_yes" class="radio-label">Yes</label>
+              <input type="radio" id="po_yes" value="Yes" v-model="po_kontrak" />
+            </div>
+            <div class="radio-item">
+              <label for="po_no" class="radio-label">No</label>
+              <input type="radio" id="po_no" value="No" v-model="po_kontrak" />
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label>Upload Foto DEC *</label>
+          <!-- iOS: Native picker | Android: Custom modal -->
+          <div class="file-upload-container">
+            <button 
+              type="button" 
+              @click="handleFotoUploadClick" 
+              class="btn-choose-file"
+            >
+              📸 Tambah Foto DEC
+            </button>
+            
+            <!-- Input file tersembunyi untuk iOS -->
+            <input 
+              ref="fotoInput"
+              type="file" 
+              @change="onFotoChange" 
+              accept="image/*" 
+              multiple
+              style="display: none;"
+            />
+            
+            <!-- Input file tersembunyi untuk Android - Gallery -->
+            <input 
+              ref="fotoGalleryInput"
+              type="file" 
+              @change="onFotoChange" 
+              accept="image/*" 
+              multiple
+              style="display: none;"
+            />
+            
+            <!-- Input file tersembunyi untuk Android - Camera -->
+            <input 
+              ref="fotoCameraInput"
+              type="file" 
+              @change="onFotoChange" 
+              accept="image/*" 
+              capture="environment"
+              style="display: none;"
+            />
+          </div>
+
+          <!-- Preview Foto DEC -->
+          <div v-if="fotoFiles.length > 0" class="preview-container">
+            <h4>Foto DEC ({{ fotoFiles.length }})</h4>
+            <div class="preview-grid">
+              <div 
+                v-for="(foto, index) in fotoFiles" 
+                :key="`foto-${index}`" 
+                class="preview-item"
+              >
+                <img :src="foto.url" :alt="`Foto DEC ${index + 1}`" />
+                <button 
+                  type="button" 
+                  @click="removeFoto(index)" 
+                  class="remove-btn"
+                  title="Hapus foto"
+                >
+                  ×
+                </button>
+                <p class="file-name">{{ foto.file.name }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONDITIONAL RENDERING: Hanya tampil untuk PENYERAHAN DI LUAR SHOWROOM -->
+        <template v-if="jenisPenyerahan === 'PENYERAHAN DI LUAR SHOWROOM'">
+          <div class="mb-3">
+            <label class="main-label">Penerima Unit *</label>
+            <div class="radio-container">
+              <div class="radio-item">
+                <label for="pemilik" class="radio-label">Pemilik</label>
+                <input type="radio" id="pemilik" value="Pemilik" v-model="penerima" required />
+              </div>
+              <div class="radio-item">
+                <label for="perwakilan" class="radio-label">Perwakilan</label>
+                <input type="radio" id="perwakilan" value="Perwakilan" v-model="penerima" required />
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label>Alasan jika bukan pemilik</label>
+            <input type="text" v-model="alasan_bukan_pemilik" />
+          </div>
+
+          <div class="mb-3">
+            <label>Doc Pendukung Perwakilan</label>
+            <div class="file-upload-container">
+              <button 
+                type="button" 
+                @click="handleDocUploadClick" 
+                class="btn-choose-file"
+              >
+                📄 Tambah Dokumen
+              </button>
+              
+              <!-- Input file tersembunyi untuk iOS -->
+              <input 
+                ref="docInput"
+                type="file" 
+                @change="onDocChange" 
+                accept="application/pdf,image/*" 
+                multiple
+                style="display: none;"
+              />
+              
+              <!-- Input file tersembunyi untuk Android - Gallery -->
+              <input 
+                ref="docGalleryInput"
+                type="file" 
+                @change="onDocChange" 
+                accept="application/pdf,image/*" 
+                multiple
+                style="display: none;"
+              />
+              
+              <!-- Input file tersembunyi untuk Android - Camera -->
+              <input 
+                ref="docCameraInput"
+                type="file" 
+                @change="onDocChange" 
+                accept="image/*" 
+                capture="environment"
+                style="display: none;"
+              />
+            </div>
+
+            <!-- Preview Dokumen -->
+            <div v-if="docFiles.length > 0" class="preview-container">
+              <h4>Dokumen ({{ docFiles.length }})</h4>
+              <div class="preview-grid">
+                <div 
+                  v-for="(doc, index) in docFiles" 
+                  :key="`doc-${index}`" 
+                  class="preview-item"
+                >
+                  <div class="doc-preview">
+                    <img 
+                      v-if="doc.isImage" 
+                      :src="doc.url" 
+                      :alt="`Dokumen ${index + 1}`" 
+                    />
+                    <div v-else class="pdf-icon">
+                      📄
+                    </div>
+                  </div>
+                  <button 
+                    type="button" 
+                    @click="removeDoc(index)" 
+                    class="remove-btn"
+                    title="Hapus dokumen"
+                  >
+                    ×
+                  </button>
+                  <p class="file-name">{{ doc.file.name }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <div class="actions">
+          <button 
+            type="submit" 
+            class="btn-submit"
+            :disabled="isSubmitting"
+          >
+            <span v-if="isSubmitting" class="spinner"></span>
+            {{ isSubmitting ? 'Mengirim...' : 'Submit' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Modal pilihan untuk Android - Foto DEC -->
+    <div v-if="showFotoOptions" class="modal-overlay" @click="showFotoOptions = false">
+      <div class="modal-content" @click.stop>
+        <h3>Pilih Sumber Foto DEC</h3>
+        <div class="option-buttons">
+          <button @click="selectFotoFromCamera" class="option-btn camera-btn">
+            <span class="icon">📷</span>
+            Ambil Foto
+          </button>
+          <button @click="selectFotoFromGallery" class="option-btn gallery-btn">
+            <span class="icon">🖼️</span>
+            Pilih dari Gallery
+          </button>
+        </div>
+        <button @click="showFotoOptions = false" class="btn-cancel">Batal</button>
+      </div>
+    </div>
+
+    <!-- Modal pilihan untuk Android - Dokumen (Hanya tampil untuk LUAR SHOWROOM) -->
+    <div v-if="showDocOptions && jenisPenyerahan === 'PENYERAHAN DI LUAR SHOWROOM'" class="modal-overlay" @click="showDocOptions = false">
+      <div class="modal-content" @click.stop>
+        <h3>Pilih Sumber Dokumen</h3>
+        <div class="option-buttons">
+          <button @click="selectDocFromCamera" class="option-btn camera-btn">
+            <span class="icon">📷</span>
+            Ambil Foto
+          </button>
+          <button @click="selectDocFromGallery" class="option-btn gallery-btn">
+            <span class="icon">📁</span>
+            Pilih File
+          </button>
+        </div>
+        <button @click="showDocOptions = false" class="btn-cancel">Batal</button>
+      </div>
+    </div>
+
+    <!-- Toast Notification System -->
+    <div class="toast-container">
+      <div 
+        v-for="toast in toasts" 
+        :key="toast.id"
+        :class="[
+          'toast',
+          `toast-${toast.type}`,
+          { 'toast-show': toast.show }
+        ]"
+      >
+        <div class="toast-icon">
+          <span v-if="toast.type === 'success'">✅</span>
+          <span v-else-if="toast.type === 'error'">❌</span>
+          <span v-else-if="toast.type === 'warning'">⚠️</span>
+          <span v-else-if="toast.type === 'info'">ℹ️</span>
+          <span v-else-if="toast.type === 'loading'" class="loading-icon">⏳</span>
+        </div>
+        <div class="toast-content">
+          <div class="toast-title">{{ toast.title }}</div>
+          <div v-if="toast.message" class="toast-message">{{ toast.message }}</div>
+        </div>
+        <button 
+          v-if="!toast.autoHide" 
+          @click="removeToast(toast.id)" 
+          class="toast-close"
+        >
+          ×
+        </button>
+        <div 
+          v-if="toast.autoHide && toast.progress !== undefined" 
+          class="toast-progress"
+          :style="{ width: toast.progress + '%' }"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="showLoadingOverlay" class="loading-overlay">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <h3>{{ loadingText }}</h3>
+        <p>{{ loadingSubtext }}</p>
+        <div class="loading-progress">
+          <div class="progress-bar" :style="{ width: uploadProgress + '%' }"></div>
+        </div>
+        <span class="progress-text">{{ uploadProgress }}%</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, onMounted } from 'vue'
+import { supabase } from '../supabase'
+import { useToast } from "vue-toastification"
+
+export default {
+  name: 'FormPenyerahan',
+  setup() {
+    const bulanList = [
+      "Januari","Februari","Maret","April","Mei","Juni",
+      "Juli","Agustus","September","Oktober","November","Desember"
+    ]
+
+    const salesList = [
+      "ADE YULIA","ADRIANTO","AULIA NOPRI","AZIS","DENI SAHPUTRA",
+      "FAHRIZAN HUTASUHUT","JIMMY PRATAMA","MHD REZKI","MUHAMMAD FAJAR",
+      "MUHAMMAD NUR","RANDI SAPUTRA","RISKI ERISMA IHSAN","RITA ATRIA",
+      "RONAL EKA PUTRA","SYAFITRI ALHAPI"
+    ]
+
+    // State untuk jenis penyerahan (null = belum pilih, string = sudah pilih)
+    const jenisPenyerahan = ref(null)
+    
+    const tanggal = ref('')
+    const bulan = ref('')
+    const sales = ref('')
+    const nama_customer = ref('')
+    // Inputan baru yang ditambahkan
+    const nomor_hp = ref('')
+    const sisa_pembayaran = ref('')
+    const po_kontrak = ref('')
+    
+    const penerima = ref('')
+    const alasan_bukan_pemilik = ref('')
+    
+    // Multiple files
+    const fotoFiles = ref([])
+    const docFiles = ref([])
+
+    // Device detection
+    const isIOS = ref(false)
+    
+    // Refs untuk modal dan input elements
+    const showFotoOptions = ref(false)
+    const showDocOptions = ref(false)
+    const fotoInput = ref(null)
+    const fotoGalleryInput = ref(null)
+    const fotoCameraInput = ref(null)
+    const docInput = ref(null)
+    const docGalleryInput = ref(null)
+    const docCameraInput = ref(null)
+
+    // Loading states
+    const isSubmitting = ref(false)
+    const showLoadingOverlay = ref(false)
+    const loadingText = ref('')
+    const loadingSubtext = ref('')
+    const uploadProgress = ref(0)
+
+    // Toast notifications
+    const toasts = ref([])
+    let toastIdCounter = 0
+    const toast = useToast()
+toast.success("Data berhasil disimpan!")
+toast.error("Terjadi kesalahan saat submit!")
+
+    // Detect iOS device
+    onMounted(() => {
+      isIOS.value = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    })
+
+    // Function untuk memilih jenis penyerahan
+    function selectJenisPenyerahan(jenis) {
+      jenisPenyerahan.value = jenis
+      
+      // Reset field-field yang tidak dibutuhkan untuk showroom
+      if (jenis === 'PENYERAHAN DI SHOWROOM') {
+        penerima.value = ''
+        alasan_bukan_pemilik.value = ''
+        // Clear dokumen files
+        docFiles.value.forEach(doc => {
+          if (doc.url) URL.revokeObjectURL(doc.url)
+        })
+        docFiles.value = []
+      }
+      
+      showSuccessToast(
+        'Jenis penyerahan dipilih!', 
+        `Anda memilih: ${jenis}`
+      )
+    }
+
+    function formatNumber(value) {
+  if (!value) return ''
+  let number = value.toString().replace(/\D/g, '') // hapus non-angka
+  return new Intl.NumberFormat('id-ID').format(number)
+}
+
+// Handler input sisa pembayaran
+function onInputSisaPembayaran(e) {
+  sisa_pembayaran.value = formatNumber(e.target.value)
+}
+
+    // Function untuk kembali ke pilihan awal
+    function backToSelection() {
+      // Reset form data
+      resetForm()
+      // Kembali ke tampilan pilihan
+      jenisPenyerahan.value = null
+      showInfoToast('Kembali ke pilihan', 'Form telah direset')
+    }
+
+    // Toast notification functions
+    function showToast(type, title, message = '', options = {}) {
+      const toast = {
+        id: ++toastIdCounter,
+        type,
+        title,
+        message,
+        show: false,
+        autoHide: options.autoHide !== false,
+        duration: options.duration || 4000,
+        progress: options.autoHide !== false ? 100 : undefined
+      }
+
+      toasts.value.push(toast)
+
+      // Trigger animation
+      setTimeout(() => {
+        toast.show = true
+      }, 10)
+
+      // Auto hide with progress
+      if (toast.autoHide) {
+        const interval = setInterval(() => {
+          toast.progress -= (100 / (toast.duration / 100))
+          if (toast.progress <= 0) {
+            clearInterval(interval)
+            removeToast(toast.id)
+          }
+        }, 100)
+      }
+
+      return toast.id
+    }
+
+    function removeToast(id) {
+      const index = toasts.value.findIndex(t => t.id === id)
+      if (index > -1) {
+        toasts.value[index].show = false
+        setTimeout(() => {
+          toasts.value.splice(index, 1)
+        }, 300)
+      }
+    }
+
+    function clearAllToasts() {
+      toasts.value.forEach(toast => {
+        toast.show = false
+      })
+      setTimeout(() => {
+        toasts.value.splice(0)
+      }, 300)
+    }
+
+    // Specific toast types
+    function showSuccessToast(title, message = '') {
+      return showToast('success', title, message, { duration: 3000 })
+    }
+
+    function showErrorToast(title, message = '') {
+      return showToast('error', title, message, { duration: 5000 })
+    }
+
+    function showWarningToast(title, message = '') {
+      return showToast('warning', title, message, { duration: 4000 })
+    }
+
+    function showInfoToast(title, message = '') {
+      return showToast('info', title, message, { duration: 4000 })
+    }
+
+    function showLoadingToast(title, message = '') {
+      return showToast('loading', title, message, { autoHide: false })
+    }
+
+    // Loading overlay functions
+    function showLoading(text, subtext = '', progress = 0) {
+      loadingText.value = text
+      loadingSubtext.value = subtext
+      uploadProgress.value = progress
+      showLoadingOverlay.value = true
+    }
+
+    function updateLoading(text, subtext = '', progress) {
+      loadingText.value = text
+      loadingSubtext.value = subtext
+      if (progress !== undefined) {
+        uploadProgress.value = progress
+      }
+    }
+
+    function hideLoading() {
+      showLoadingOverlay.value = false
+      uploadProgress.value = 0
+    }
+
+    // Create object URL untuk preview
+    function createFileObject(file) {
+      const isImage = file.type.startsWith('image/')
+      return {
+        file: file,
+        url: isImage ? URL.createObjectURL(file) : null,
+        isImage: isImage
+      }
+    }
+
+    // Handle foto upload click
+    function handleFotoUploadClick() {
+      if (isIOS.value) {
+        // iOS: gunakan native picker
+        fotoInput.value.click()
+      } else {
+        // Android: gunakan modal
+        showFotoOptions.value = true
+      }
+    }
+
+    // Handle dokumen upload click (hanya untuk LUAR SHOWROOM)
+    function handleDocUploadClick() {
+      if (jenisPenyerahan.value !== 'PENYERAHAN DI LUAR SHOWROOM') {
+        return // Jangan lakukan apa-apa jika bukan LUAR SHOWROOM
+      }
+      
+      if (isIOS.value) {
+        // iOS: gunakan native picker
+        docInput.value.click()
+      } else {
+        // Android: gunakan modal
+        showDocOptions.value = true
+      }
+    }
+
+    function onFotoChange(e) {
+      const files = Array.from(e.target.files)
+      if (files.length > 0) {
+        files.forEach(file => {
+          fotoFiles.value.push(createFileObject(file))
+        })
+        showSuccessToast(
+          'Foto berhasil ditambahkan!', 
+          `${files.length} foto DEC telah dipilih`
+        )
+      }
+      showFotoOptions.value = false
+      
+      // Reset input untuk bisa pilih file yang sama lagi
+      e.target.value = ''
+    }
+
+    function onDocChange(e) {
+      const files = Array.from(e.target.files)
+      if (files.length > 0) {
+        files.forEach(file => {
+          docFiles.value.push(createFileObject(file))
+        })
+        showSuccessToast(
+          'Dokumen berhasil ditambahkan!', 
+          `${files.length} dokumen telah dipilih`
+        )
+      }
+      showDocOptions.value = false
+      
+      // Reset input untuk bisa pilih file yang sama lagi
+      e.target.value = ''
+    }
+
+    // Remove foto
+    function removeFoto(index) {
+      const foto = fotoFiles.value[index]
+      if (foto.url) {
+        URL.revokeObjectURL(foto.url)
+      }
+      fotoFiles.value.splice(index, 1)
+      showInfoToast('Foto dihapus', 'Foto DEC berhasil dihapus dari daftar')
+    }
+
+    // Remove dokumen
+    function removeDoc(index) {
+      const doc = docFiles.value[index]
+      if (doc.url) {
+        URL.revokeObjectURL(doc.url)
+      }
+      docFiles.value.splice(index, 1)
+      showInfoToast('Dokumen dihapus', 'Dokumen berhasil dihapus dari daftar')
+    }
+
+    // Functions untuk Android modal
+    function selectFotoFromCamera() {
+      fotoCameraInput.value.click()
+    }
+
+    function selectFotoFromGallery() {
+      fotoGalleryInput.value.click()
+    }
+
+    function selectDocFromCamera() {
+      if (jenisPenyerahan.value === 'PENYERAHAN DI LUAR SHOWROOM') {
+        docCameraInput.value.click()
+      }
+    }
+
+    function selectDocFromGallery() {
+      if (jenisPenyerahan.value === 'PENYERAHAN DI LUAR SHOWROOM') {
+        docGalleryInput.value.click()
+      }
+    }
+
+    async function uploadToStorage(file, folder, onProgress) {
+      try {
+        console.log(`📤 Upload ${file.name} ke folder ${folder}...`)
+        const fileName = `${folder}/${Date.now()}_${file.name}`
+        
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('foto-penyerahan')
+          .upload(fileName, file)
+
+        if (uploadError) {
+          console.error('❌ Upload error:', uploadError)
+          throw uploadError
+        }
+
+        console.log('✅ Upload berhasil:', uploadData)
+
+        const { data: urlData } = supabase.storage
+          .from('foto-penyerahan')
+          .getPublicUrl(fileName)
+        
+        console.log('🔗 Public URL:', urlData.publicUrl)
+        return urlData.publicUrl
+      } catch (error) {
+        console.error('❌ Error di uploadToStorage:', error)
+        throw error
+      }
+    }
+
+    async function onSubmit() {
+      try {
+        console.log('🚀 Mulai submit...')
+        
+        // Clear existing toasts
+        clearAllToasts()
+        
+  if (nomor_hp.value && (nomor_hp.value.length < 10 || nomor_hp.value.length > 12)) {
+    toast.error("Nomor HP Tidak Valid!") // ✅ toast muncul
+    return
+  }
+        // Validasi foto DEC harus ada
+  if (fotoFiles.value.length === 0) {
+    toast.error(
+      'Foto DEC wajib diupload!\nSilakan tambahkan minimal 1 foto DEC sebelum submit',
+      {
+        timeout: 4000,
+        position: 'top-right'
+      }
+    )
+    return
+  }
+
+        // Validasi khusus untuk LUAR SHOWROOM
+        if (jenisPenyerahan.value === 'PENYERAHAN DI LUAR SHOWROOM') {
+          if (!penerima.value) {
+            showErrorToast(
+              'Penerima Unit wajib dipilih!', 
+              'Silakan pilih penerima unit untuk penyerahan di luar showroom'
+            )
+            return
+          }
+        }
+        
+        // Set loading state
+        isSubmitting.value = true
+        
+        // Show loading overlay
+        showLoading(
+          'Memproses data...', 
+          'Sedang memvalidasi koneksi ke server', 
+          10
+        )
+        
+        // Test koneksi Supabase
+        console.log('🔌 Test koneksi ke Supabase...')
+        const { data: testData, error: testError } = await supabase
+          .from('penyerahan_unit_')
+          .select('count', { count: 'exact', head: true })
+        
+        if (testError) {
+          console.error('❌ Koneksi ke Supabase gagal:', testError)
+          hideLoading()
+          isSubmitting.value = false
+          showErrorToast(
+            'Koneksi ke server gagal!', 
+            `Error: ${testError.message}`
+          )
+          return
+        } else {
+          console.log('✅ Koneksi ke Supabase berhasil. Total data:', testData)
+          updateLoading(
+            'Koneksi berhasil!', 
+            'Mulai mengupload file...', 
+            20
+          )
+        }
+        
+        const totalFiles = fotoFiles.value.length + (jenisPenyerahan.value === 'PENYERAHAN DI LUAR SHOWROOM' ? docFiles.value.length : 0)
+        let uploadedFiles = 0
+        
+        // Upload semua foto DEC
+        let fotoURLs = []
+        if (fotoFiles.value.length > 0) {
+          console.log(`📸 Upload ${fotoFiles.value.length} foto DEC...`)
+          
+          for (let i = 0; i < fotoFiles.value.length; i++) {
+            updateLoading(
+              `Upload foto DEC ${i + 1}/${fotoFiles.value.length}...`, 
+              `File: ${fotoFiles.value[i].file.name}`, 
+              20 + (uploadedFiles / totalFiles) * 60
+            )
+            
+            const url = await uploadToStorage(fotoFiles.value[i].file, 'dec')
+            fotoURLs.push(url)
+            uploadedFiles++
+            console.log(`✅ Foto DEC ${i+1} berhasil:`, url)
+          }
+        }
+
+        // Upload semua dokumen (hanya untuk LUAR SHOWROOM)
+        let docURLs = []
+        if (jenisPenyerahan.value === 'PENYERAHAN DI LUAR SHOWROOM' && docFiles.value.length > 0) {
+          console.log(`📄 Upload ${docFiles.value.length} dokumen...`)
+          
+          for (let i = 0; i < docFiles.value.length; i++) {
+            updateLoading(
+              `Upload dokumen ${i + 1}/${docFiles.value.length}...`, 
+              `File: ${docFiles.value[i].file.name}`, 
+              20 + (uploadedFiles / totalFiles) * 60
+            )
+            
+            const url = await uploadToStorage(docFiles.value[i].file, 'dokumen')
+            docURLs.push(url)
+            uploadedFiles++
+            console.log(`✅ Dokumen ${i+1} berhasil:`, url)
+          }
+        }
+
+        updateLoading(
+          'Upload selesai!', 
+          'Menyimpan data ke database...', 
+          85
+        )
+
+        const dataToInsert = {
+          jenis_penyerahan: jenisPenyerahan.value,
+          tanggal_penyerahan: tanggal.value,
+          bulan_bp: bulan.value,
+          sales: sales.value,
+          nama_customer: nama_customer.value,
+          // Data baru yang ditambahkan
+          nomor_hp: nomor_hp.value,
+            sisa_pembayaran: sisa_pembayaran.value 
+    ? parseInt(sisa_pembayaran.value.replace(/\./g, '')) // buang titik, biar angka asli
+    : null,
+          po_kontrak: po_kontrak.value,
+          
+          // Data conditional berdasarkan jenis penyerahan
+          penerima_unit: jenisPenyerahan.value === 'PENYERAHAN DI LUAR SHOWROOM' ? penerima.value : null,
+          alasan_bukan_pemilik: jenisPenyerahan.value === 'PENYERAHAN DI LUAR SHOWROOM' ? alasan_bukan_pemilik.value : null,
+          foto_dec_url: JSON.stringify(fotoURLs), // Multiple URLs as JSON string
+          doc_perwakilan_url: jenisPenyerahan.value === 'PENYERAHAN DI LUAR SHOWROOM' ? JSON.stringify(docURLs) : null,
+          created_at: new Date().toISOString()
+        }
+        
+        console.log('💾 Data yang akan disimpan:', dataToInsert)
+
+        const { error, data: inserted } = await supabase
+          .from('penyerahan_unit_')
+          .insert([dataToInsert])
+          .select()
+
+        console.log('📊 Response dari Supabase:', { error, inserted })
+
+        updateLoading(
+          'Menyelesaikan proses...', 
+          'Hampir selesai...', 
+          95
+        )
+
+        // Simulate final processing
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        if (error) {
+          console.error('❌ Error detail dari Supabase:', error)
+          hideLoading()
+          isSubmitting.value = false
+          showErrorToast(
+            'Gagal menyimpan data!', 
+            `Database error: ${error.message}`
+          )
+        } else {
+          console.log('✅ Data berhasil dikirim ke Supabase:', inserted)
+          updateLoading(
+            'Berhasil!', 
+            'Data telah tersimpan', 
+            100
+          )
+          
+          // Wait a moment then hide loading
+          setTimeout(() => {
+            hideLoading()
+            isSubmitting.value = false
+            
+            const totalDocs = jenisPenyerahan.value === 'PENYERAHAN DI LUAR SHOWROOM' ? docFiles.value.length : 0
+            showSuccessToast(
+              '🎉 Data berhasil dikirim!', 
+              `Form ${jenisPenyerahan.value} telah berhasil disimpan dengan ${fotoFiles.value.length} foto DEC${totalDocs > 0 ? ` dan ${totalDocs} dokumen` : ''}`
+            )
+            
+            // Kembali ke tampilan pilihan setelah berhasil submit
+            setTimeout(() => {
+              backToSelection()
+            }, 2000)
+          }, 1000)
+        }
+      } catch (err) {
+        console.error('❌ Error saat submit:', err)
+        hideLoading()
+        isSubmitting.value = false
+        showErrorToast(
+          'Terjadi kesalahan sistem!', 
+          `Error: ${err.message || 'Unknown error'}`
+        )
+      }
+    }
+
+    function resetForm() {
+      tanggal.value = ''
+      bulan.value = ''
+      sales.value = ''
+      nama_customer.value = ''
+      // Reset inputan baru
+      nomor_hp.value = ''
+      sisa_pembayaran.value = ''
+      po_kontrak.value = ''
+      
+      penerima.value = ''
+      alasan_bukan_pemilik.value = ''
+      
+      // Clear preview dan revoke URLs
+      fotoFiles.value.forEach(foto => {
+        if (foto.url) URL.revokeObjectURL(foto.url)
+      })
+      docFiles.value.forEach(doc => {
+        if (doc.url) URL.revokeObjectURL(doc.url)
+      })
+      
+      fotoFiles.value = []
+      docFiles.value = []
+      showFotoOptions.value = false
+      showDocOptions.value = false
+
+      // Reset semua file inputs
+      const inputs = [fotoInput, fotoGalleryInput, fotoCameraInput, docInput, docGalleryInput, docCameraInput]
+      inputs.forEach(input => {
+        if (input.value) input.value.value = ''
+      })
+    }
+
+    return {
+      bulanList, salesList,
+      // State untuk jenis penyerahan
+      jenisPenyerahan,
+      selectJenisPenyerahan,
+      backToSelection,
+      
+      tanggal, bulan, sales, nama_customer, 
+      // Return inputan baru
+      nomor_hp, sisa_pembayaran, po_kontrak,
+      
+      penerima, alasan_bukan_pemilik,
+      fotoFiles, docFiles, isIOS,
+      showFotoOptions, showDocOptions,
+      fotoInput, fotoGalleryInput, fotoCameraInput, docInput, docGalleryInput, docCameraInput,
+      handleFotoUploadClick, handleDocUploadClick,
+      onFotoChange, onDocChange, onSubmit,
+      removeFoto, removeDoc,
+      selectFotoFromCamera, selectFotoFromGallery,
+      selectDocFromCamera, selectDocFromGallery,
+      // Loading and notification states
+      isSubmitting, showLoadingOverlay, loadingText, loadingSubtext, uploadProgress,
+      toasts, removeToast
+    }
+  }
+}
+</script>
+
