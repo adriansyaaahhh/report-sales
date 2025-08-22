@@ -1066,12 +1066,14 @@ label {
         <!-- Inputan Baru: Sisa Pembayaran -->
 <div class="mb-3">
   <label>Sisa Pembayaran</label>
-  <input 
-    type="text" 
-    v-model="sisa_pembayaran" 
-    @input="onInputSisaPembayaran"
-    placeholder="Masukkan jumlah sisa pembayaran"
-  />
+<input
+      id="sisaPembayaran"
+      type="text"
+      v-model="sisaPembayaran"
+      @input="onSisaPembayaranInput"
+      placeholder="Masukkan hanya angka"
+      class="input"
+    />
 </div>
 
         <!-- Inputan Baru: PO Kontrak -->
@@ -1453,10 +1455,47 @@ toast.error("Terjadi kesalahan saat submit!")
   return new Intl.NumberFormat('id-ID').format(number)
 }
 
-// Handler input sisa pembayaran
-function onInputSisaPembayaran(e) {
-  sisa_pembayaran.value = formatNumber(e.target.value)
+const lastInvalidKeyTime = ref(0)
+
+function onSisaPembayaranKeydown(e) {
+  const allowedKeys = [
+    'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'
+  ]
+  if (allowedKeys.includes(e.key)) return
+
+  // Allow Ctrl/Cmd + A/C/V/X
+  if ((e.ctrlKey || e.metaKey) && ['a','c','v','x'].includes(e.key.toLowerCase())) return
+
+  // Hanya digit 0-9
+  if (!/^\d$/.test(e.key)) {
+    e.preventDefault()
+    const now = Date.now()
+    // biar gak spam toast
+    if (now - lastInvalidKeyTime.value > 1000) {
+      toast.error('Masukkan angka yang valid')
+      lastInvalidKeyTime.value = now
+    }
+  }
 }
+
+function onSisaPembayaranInput(e) {
+  // bersihkan semua non-digit (termasuk dari autofill/keyboard aneh)
+  const digits = e.target.value.replace(/\D+/g, '')
+  if (digits !== e.target.value) {
+    e.target.value = digits
+    toast.error('Masukkan angka yang valid')
+  }
+  sisa_pembayaran.value = digits
+}
+
+function onSisaPembayaranPaste(e) {
+  const data = (e.clipboardData || window.clipboardData).getData('text')
+  if (!/^\d+$/.test(data)) {
+    e.preventDefault()
+    toast.error('Hanya angka yang diperbolehkan')
+  }
+}
+
 
     // Function untuk kembali ke pilihan awal
     function backToSelection() {
