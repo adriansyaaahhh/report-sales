@@ -128,19 +128,16 @@
 }
 
 .back-btn {
-  position: absolute;
-  left: 8px;
-  top: 8px;
-  transform: translateY(-50%);
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
+  padding: 6px 10px;
+  font-size: 14px;
+  background: #fff;
+  border: 1px solid #ddd;
   border-radius: 6px;
-  padding: 4px 8px;
-  color: #495057;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
+  margin-bottom: 4px; /* kasih jarak biar gak nempel judul */
 }
+
 
 .back-btn:hover {
   background: #e9ecef;
@@ -906,7 +903,8 @@ label {
     font-size: 0.8rem;
     top: 1 rem;   
     left: 0.5rem;
-    padding: 0.4rem 0.8rem;
+    padding: 6px 10px;
+    margin-bottom: 4px
   }
 
   .selection-btn {
