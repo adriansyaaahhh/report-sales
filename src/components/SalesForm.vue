@@ -129,13 +129,13 @@
 
 .back-btn {
   position: absolute;
-  left: 0;
-  top: 50%;
+  left: 8px;
+  top: 8px;
   transform: translateY(-50%);
   background: #f8f9fa;
   border: 1px solid #dee2e6;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  padding: 4px 8px;
   color: #495057;
   cursor: pointer;
   font-size: 0.9rem;
@@ -904,6 +904,8 @@ label {
 
   .back-btn {
     font-size: 0.8rem;
+    top: 1 rem;   
+    left: 0.5rem;
     padding: 0.4rem 0.8rem;
   }
 
@@ -1021,7 +1023,9 @@ label {
           ← Kembali
         </button>
         <div class="form-title">
-          <h2>📝 Form Penyerahan Unit</h2>
+           <h2 class="w-full text-center font-bold text-lg ml-10 sm:ml-0">
+    📄 Form Penyerahan Unit
+  </h2>
           <div class="jenis-badge" :class="jenisPenyerahan === 'PENYERAHAN DI SHOWROOM' ? 'showroom' : 'outside'">
             {{ jenisPenyerahan }}
           </div>
